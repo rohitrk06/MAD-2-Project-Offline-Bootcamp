@@ -3,12 +3,14 @@ from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin
 
+from application.models import *
+from application.user_datastore import user_datastore
+from application.database import db
+
+
 
 app = Flask(__name__)
 api=Api(app)
-
-db = SQLAlchemy(app)
-db.init_app(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -16,31 +18,25 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECURITY_PASSWORD_SALT'] = 'my_precious_two'
 app.config['SECRET_KEY'] = 'my_precious'
 
-class Users(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    active = db.Column(db.Boolean(), default=True)
-    
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
-    fs_token_uniquifier = db.Column(db.String(255), unique=True, nullable=True)
+db.init_app(app)
 
-    roles = db.relationship('Roles', secondary='user_roles')
-    
-
-class Roles(db.Model, RoleMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True, nullable=False)
-    description = db.Column(db.String(255))
-
-class UserRoles(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-
-
-user_datastore = SQLAlchemyUserDatastore(db, Users, Roles)
+# user_datastore = SQLAlchemyUserDatastore(db, Users, Roles)
 security = Security(app, user_datastore)
+
+with app.app_context():
+    db.create_all()
+
+    admin_role = user_datastore.find_or_create_role(name='admin', description='Administrator role')
+    user_role = user_datastore.find_or_create_role(name='user', description='User role')
+
+    if not user_datastore.find_user(email="admin@gmail.com"):
+        user_datastore.create_user(
+            email = "admin@gmail.com",
+            password    = "admin123",
+            roles = [user_role, admin_role],
+        )
+
+    db.session.commit()
 
 
 
@@ -125,7 +121,13 @@ def get_length(str1, str2):
 
     return jsonify(result) , 203
 
+app.app_context().push()
 
+from auth_apis import *
+# from auth_apis import Login, Logout
+
+api.add_resource(Login, '/api/auth/login')
+api.add_resource(Logout, '/api/auth/logout')
 
 
 if __name__ == '__main__':
