@@ -68,6 +68,16 @@ with app.app_context():
 
 database = []
 
+
+class ExportCSV(Resource):
+    def get(self):
+        from celery_app import generate_csv
+        data = [{'name':'mahesh'},{'name':'suresh'}]
+        generate_csv.delay(data)
+        return "CSV export initialised, you'll receive mail"
+    
+api.add_resource(ExportCSV, '/api/export_csv')
+
 class UserDetails(Resource):
     def get(self):
         return make_response(jsonify(database),200)
