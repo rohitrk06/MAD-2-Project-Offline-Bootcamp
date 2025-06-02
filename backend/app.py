@@ -2,15 +2,17 @@ from flask import Flask, jsonify, request, make_response
 from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin
-
 from application.models import *
 from application.user_datastore import user_datastore
 from application.database import db
 
 
+from flask_cors import CORS
 
 app = Flask(__name__)
 api=Api(app)
+
+CORS(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -130,6 +132,14 @@ def get_length(str1, str2):
     }
 
     return jsonify(result) , 203
+
+
+@app.route('/api/check_user_email', methods=['GET'])
+def check_user_email():
+    email = request.args.get('email')
+    user = user_datastore.find_user(email=email)
+    if not user:
+        return jsonify({'exists': False}), 200
 
 app.app_context().push()
 
