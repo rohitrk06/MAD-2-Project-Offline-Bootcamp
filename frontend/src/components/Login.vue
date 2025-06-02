@@ -1,6 +1,19 @@
 <script setup>
+import { pushScopeId } from 'vue';
 import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
+
+import {useRouter} from 'vue-router'
+
+const router = useRouter();
+
+
+let isvacant = ref(false);
+function changeVacancy(){
+    isvacant.value = !isvacant.value;
+}
+
+
 
 
 const email = ref('');
@@ -46,6 +59,8 @@ async function login(){
 
         alert(result.message);
         localStorage.setItem('token', result.auth_token);
+
+        router.push('/');
     }
 
     console.log(data);
@@ -59,6 +74,9 @@ console.log(email.value, password.value);
 <template>
     <button @click="incrementCounter">Click me</button>
     <p>Counter: {{ counter }}</p>
+
+
+    <button @click="changeVacancy" :class="{'btn btn-primary':isvacant}">Change Vacancy</button>
 
     <h1>Welcome to Grocery Store</h1>
     <h2>Login</h2>

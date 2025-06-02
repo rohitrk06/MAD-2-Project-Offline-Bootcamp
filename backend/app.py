@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, make_response
 from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin
+from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, current_user, auth_token_required
 from application.models import *
 from application.user_datastore import user_datastore
 from application.database import db
@@ -140,6 +140,18 @@ def check_user_email():
     user = user_datastore.find_user(email=email)
     if not user:
         return jsonify({'exists': False}), 200
+    
+@app.route('/api/get_current_user', methods=['GET'])
+@auth_token_required
+def get_current_user():
+    if current_user.is_authenticated:
+        return jsonify({
+            'email': current_user.email,
+            'roles': [role.name for role in current_user.roles]
+        }), 200
+    else:
+        return jsonify({'message': 'User not authenticated'}), 401
+
 
 app.app_context().push()
 
